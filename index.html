@@ -89,38 +89,68 @@ canvas {
   display: none;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 5px;
+  padding: 15px 10px;
   max-width: 600px;
   margin: 0 auto;
 }
 .touch-btn {
-  background: rgba(0, 255, 0, 0.15);
-  border: 2px solid #0f0;
+  background: rgba(0, 255, 0, 0.12);
+  border: 3px solid rgba(0, 255, 0, 0.6);
   color: #0f0;
   font-family: 'Courier New', monospace;
-  font-size: 28px;
   font-weight: bold;
-  border-radius: 12px;
+  border-radius: 50%;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.05s;
 }
-.touch-btn:active {
-  background: rgba(0, 255, 0, 0.4);
+.touch-btn.active {
+  background: rgba(0, 255, 0, 0.45);
+  border-color: #0f0;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
 }
 .move-btn {
-  width: 70px;
-  height: 70px;
-  line-height: 66px;
+  width: 22vw;
+  height: 22vw;
+  max-width: 90px;
+  max-height: 90px;
+  font-size: 36px;
 }
 .fire-btn {
-  width: 100px;
-  height: 70px;
-  font-size: 20px;
+  width: 28vw;
+  height: 28vw;
+  max-width: 110px;
+  max-height: 110px;
+  font-size: 16px;
   letter-spacing: 2px;
+  border-color: rgba(255, 68, 68, 0.7);
+  color: #f44;
+  background: rgba(255, 68, 68, 0.1);
+}
+.fire-btn.active {
+  background: rgba(255, 68, 68, 0.45);
+  border-color: #f44;
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+}
+.fire-btn-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.fire-icon {
+  font-size: 28px;
+}
+.fire-label {
+  font-size: 11px;
+  letter-spacing: 3px;
 }
 #touch-left-group {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 @media (pointer: coarse), (max-width: 768px) {
   #touch-controls { display: flex; }
@@ -137,10 +167,15 @@ canvas {
   <canvas id="game" width="600" height="500"></canvas>
   <div id="touch-controls">
     <div id="touch-left-group">
-      <button class="touch-btn move-btn" id="btn-left">&larr;</button>
-      <button class="touch-btn move-btn" id="btn-right">&rarr;</button>
+      <button class="touch-btn move-btn" id="btn-left">&#9664;</button>
+      <button class="touch-btn move-btn" id="btn-right">&#9654;</button>
     </div>
-    <button class="touch-btn fire-btn" id="btn-fire">FIRE</button>
+    <button class="touch-btn fire-btn" id="btn-fire">
+      <div class="fire-btn-inner">
+        <span class="fire-icon">&#9650;</span>
+        <span class="fire-label">FIRE</span>
+      </div>
+    </button>
   </div>
   <div id="start-screen">
     <h1>SPACE INVADERS</h1>
@@ -197,13 +232,14 @@ const touchState = { left: false, right: false, fire: false };
 
 function setupTouchBtn(id, key) {
   const btn = document.getElementById(id);
-  btn.addEventListener('touchstart', e => { e.preventDefault(); touchState[key] = true; });
-  btn.addEventListener('touchend', e => { e.preventDefault(); touchState[key] = false; });
-  btn.addEventListener('touchcancel', e => { touchState[key] = false; });
-  // Mouse fallback for testing
-  btn.addEventListener('mousedown', e => { e.preventDefault(); touchState[key] = true; });
-  btn.addEventListener('mouseup', e => { e.preventDefault(); touchState[key] = false; });
-  btn.addEventListener('mouseleave', e => { touchState[key] = false; });
+  const activate = () => { touchState[key] = true; btn.classList.add('active'); };
+  const deactivate = () => { touchState[key] = false; btn.classList.remove('active'); };
+  btn.addEventListener('touchstart', e => { e.preventDefault(); activate(); });
+  btn.addEventListener('touchend', e => { e.preventDefault(); deactivate(); });
+  btn.addEventListener('touchcancel', e => { deactivate(); });
+  btn.addEventListener('mousedown', e => { e.preventDefault(); activate(); });
+  btn.addEventListener('mouseup', e => { e.preventDefault(); deactivate(); });
+  btn.addEventListener('mouseleave', e => { deactivate(); });
 }
 setupTouchBtn('btn-left', 'left');
 setupTouchBtn('btn-right', 'right');
