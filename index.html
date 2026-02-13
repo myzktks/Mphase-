@@ -15,22 +15,31 @@ body {
   font-family: 'Courier New', monospace;
   color: #0f0;
   overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 #container {
   text-align: center;
+  position: relative;
+  width: 100%;
+  max-width: 600px;
 }
 canvas {
   border: 2px solid #0f0;
   display: block;
   margin: 0 auto;
   image-rendering: pixelated;
+  width: 100%;
+  max-width: 600px;
+  height: auto;
 }
 #ui {
   display: flex;
   justify-content: space-between;
-  padding: 10px 0;
-  font-size: 18px;
-  width: 600px;
+  padding: 10px 5px;
+  font-size: min(18px, 4vw);
+  max-width: 600px;
   margin: 0 auto;
 }
 #start-screen {
@@ -40,15 +49,16 @@ canvas {
   transform: translate(-50%, -50%);
   text-align: center;
   z-index: 10;
+  width: 90%;
 }
 #start-screen h1 {
-  font-size: 48px;
+  font-size: min(48px, 8vw);
   margin-bottom: 20px;
   text-shadow: 0 0 20px #0f0;
   letter-spacing: 4px;
 }
 #start-screen p {
-  font-size: 18px;
+  font-size: min(18px, 4vw);
   animation: blink 1s infinite;
 }
 @keyframes blink {
@@ -63,15 +73,57 @@ canvas {
   transform: translate(-50%, -50%);
   text-align: center;
   z-index: 10;
+  width: 90%;
 }
 #game-over h1 {
-  font-size: 48px;
+  font-size: min(48px, 8vw);
   color: #f00;
   text-shadow: 0 0 20px #f00;
   margin-bottom: 20px;
 }
 #game-over p {
-  font-size: 18px;
+  font-size: min(18px, 4vw);
+}
+/* Touch controls */
+#touch-controls {
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 5px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.touch-btn {
+  background: rgba(0, 255, 0, 0.15);
+  border: 2px solid #0f0;
+  color: #0f0;
+  font-family: 'Courier New', monospace;
+  font-size: 28px;
+  font-weight: bold;
+  border-radius: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.touch-btn:active {
+  background: rgba(0, 255, 0, 0.4);
+}
+.move-btn {
+  width: 70px;
+  height: 70px;
+  line-height: 66px;
+}
+.fire-btn {
+  width: 100px;
+  height: 70px;
+  font-size: 20px;
+  letter-spacing: 2px;
+}
+#touch-left-group {
+  display: flex;
+  gap: 10px;
+}
+@media (pointer: coarse), (max-width: 768px) {
+  #touch-controls { display: flex; }
 }
 </style>
 </head>
@@ -83,9 +135,16 @@ canvas {
     <span>LIVES: <span id="lives">3</span></span>
   </div>
   <canvas id="game" width="600" height="500"></canvas>
+  <div id="touch-controls">
+    <div id="touch-left-group">
+      <button class="touch-btn move-btn" id="btn-left">&larr;</button>
+      <button class="touch-btn move-btn" id="btn-right">&rarr;</button>
+    </div>
+    <button class="touch-btn fire-btn" id="btn-fire">FIRE</button>
+  </div>
   <div id="start-screen">
     <h1>SPACE INVADERS</h1>
-    <p>PRESS SPACE OR CLICK TO START</p>
+    <p>TAP OR PRESS SPACE TO START</p>
   </div>
   <div id="game-over">
     <h1>GAME OVER</h1>
@@ -129,6 +188,30 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('keyup', e => { keys[e.code] = false; });
 canvas.addEventListener('click', () => {
+  if (state === 'start') startGame();
+  else if (state === 'gameover') restartGame();
+});
+
+// Touch controls
+const touchState = { left: false, right: false, fire: false };
+
+function setupTouchBtn(id, key) {
+  const btn = document.getElementById(id);
+  btn.addEventListener('touchstart', e => { e.preventDefault(); touchState[key] = true; });
+  btn.addEventListener('touchend', e => { e.preventDefault(); touchState[key] = false; });
+  btn.addEventListener('touchcancel', e => { touchState[key] = false; });
+  // Mouse fallback for testing
+  btn.addEventListener('mousedown', e => { e.preventDefault(); touchState[key] = true; });
+  btn.addEventListener('mouseup', e => { e.preventDefault(); touchState[key] = false; });
+  btn.addEventListener('mouseleave', e => { touchState[key] = false; });
+}
+setupTouchBtn('btn-left', 'left');
+setupTouchBtn('btn-right', 'right');
+setupTouchBtn('btn-fire', 'fire');
+
+// Tap canvas to start/restart on mobile
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
   if (state === 'start') startGame();
   else if (state === 'gameover') restartGame();
 });
@@ -348,13 +431,13 @@ function update() {
   if (state !== 'playing') return;
   frameCount++;
 
-  // Player movement
-  if (keys['ArrowLeft'] || keys['KeyA']) player.x = Math.max(20, player.x - player.speed);
-  if (keys['ArrowRight'] || keys['KeyD']) player.x = Math.min(W - 20, player.x + player.speed);
+  // Player movement (keyboard + touch)
+  if (keys['ArrowLeft'] || keys['KeyA'] || touchState.left) player.x = Math.max(20, player.x - player.speed);
+  if (keys['ArrowRight'] || keys['KeyD'] || touchState.right) player.x = Math.min(W - 20, player.x + player.speed);
 
   // Shooting
   if (shootCooldown > 0) shootCooldown--;
-  if ((keys['Space'] || keys['ArrowUp'] || keys['KeyW']) && shootCooldown === 0) {
+  if ((keys['Space'] || keys['ArrowUp'] || keys['KeyW'] || touchState.fire) && shootCooldown === 0) {
     bullets.push({ x: player.x, y: player.y - 15, speed: 7 });
     shootCooldown = 15;
   }
